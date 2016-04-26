@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<!--
+	ANT Build File des Hallo Welt CORBA Clients.
+	
+	Author: Hagen Aad Fock hfock@student.tgm.ac.at
+	Version: 1.0
+	Datum: 22.02.2015
+ -->
+
+<project name="client">
+
+	<!-- Setzen aller Variablen -->
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="doc.dir" value="doc" />
+	<property name="idl.dir" value="../idl" />
+	<property name="gen.dir" value="${build.dir}/generated" />
+	<property name="resources.dir" value="resources" />
+	<property name="jacorb.dir" value="/home/daniel/downloads/jacorb" />
+	<property name="tmp.dir" value="${build.dir}/tmp" />
+	<property name="host" value="127.0.0.1" />
+
+	<!-- Uebergeben der Argumente -->
+	<property name="jaco.args" value="-Dignored=value" />
+
+	<!-- Setzen des Classpaths von JacORB -->
+	<path id="jacorb.classpath">
+		
+		<!-- Setzen des Pfades zu, und inkludieren der Libaries -->
+		<fileset dir="${jacorb.dir}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<!-- Setzen des Classpaths des Projekts (classes Ordner in build) -->
+	<path id="project.classpath">
+		<pathelement location="${classes.dir}" />
+	</path>
+
+	<!-- Definieren eines in einer bestimmten Klasse vorhandenen Tasks -->
+	<target name="idl.taskdef">
+		<taskdef name="jacidl" classname="org.jacorb.idl.JacIDL"
+			classpathref="jacorb.classpath" />
+	</target>
+
+	<!-- Generieren des aus dem idl File resultierenden Quellcodes  -->
+	<target name="idl" depends="idl.taskdef">
+		<mkdir dir="${idl.dir}" />
+		<jacidl srcdir="${idl.dir}" destdir="${gen.dir}" includes="*.idl"
+			helpercompat="jacorb" includepath="${jacorb.dir}/idl/omg" />
+	</target>
+
+	<!-- Kompilieren des Quellcodes -->
+	<target name="compile" depends="idl">
+		<mkdir dir="${classes.dir}" />
+
+		<javac destdir="${classes.dir}" debug="true" includeantruntime="false">
+			<src path="${gen.dir}" />
+			<src path="${src.dir}" />
+			<classpath refid="jacorb.classpath" />
+		</javac>
+	</target>
+
+	<!-- Ausfuehren des Clients -->
+	<target name="run-client" depends="compile">
+		<description>
+			Dem Client kann eine Hostadresse mitgegeben werden.
+			Ein Aufruf ist mit 'ant run-client -Dhost=host' möglich.
+			Beispielaufruf: ant run-client -Dhost=127.0.0.1
+
+			Sollte kein Host angegeben werden, so wird localhost als Host verwendet.
+		</description>
+		<java fork="true" classname="cb.Client">
+
+			<!-- Wuerde folgendem Aufruf entsprechen: java cb.Client -ORBInitRef NameService=corbaloc::127.0.0.1:2809/NameService -->
+			<arg value="-ORBInitRef" />
+			<arg value="NameService=corbaloc::${host}:2809" />
+			<classpath refid="project.classpath" />
+		</java>
+	</target>
+
+	<!-- Loeschen des build Ordners -->
+	<target name="clean">
+		<delete dir="${build.dir}" />
+	</target>
+
+</project>
